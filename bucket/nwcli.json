@@ -1,0 +1,30 @@
+{
+    "version": "0.1.0",
+    "description": "Network CLI Toolbox",
+    "homepage": "https://github.com/mathwro/nwcli",
+    "license": "Unknown",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/mathwro/nwcli/releases/download/v0.1.0/nwcli_0.1.0_windows_amd64.zip",
+            "hash": "0b1cd5a27afb42c554c7d5ce2df999193fa497e2191b99bde318e2b384c67e4f"
+        },
+        "arm64": {
+            "url": "https://github.com/mathwro/nwcli/releases/download/v0.1.0/nwcli_0.1.0_windows_arm64.zip",
+            "hash": "25b4db4a90df38f338a08ca51803496389ed0b57d116d6cf531c8a40c3cc3201"
+        }
+    },
+    "bin": "nwcli.exe",
+    "checkver": {
+        "github": "https://github.com/mathwro/nwcli"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/mathwro/nwcli/releases/download/v$version/nwcli_$version_windows_amd64.zip"
+            },
+            "arm64": {
+                "url": "https://github.com/mathwro/nwcli/releases/download/v$version/nwcli_$version_windows_arm64.zip"
+            }
+        }
+    }
+}
