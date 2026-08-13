@@ -4,12 +4,12 @@ Unified Scoop bucket and Homebrew tap for command-line tools published by [mathw
 
 ## Availability
 
-The initial package definitions are checked in, but installation is intentionally unavailable until each upstream repository publishes a stable `vMAJOR.MINOR.PATCH` GitHub Release with all six required archives and `checksums.txt`. Generated Scoop manifests and Homebrew formulae appear only after that release passes independent download, checksum, and archive-safety verification.
+Package metadata is generated only after an upstream stable `vMAJOR.MINOR.PATCH` GitHub Release supplies all six required archives and `checksums.txt` and passes independent download, checksum, and archive-safety verification.
 
 | Tool | Description | Source | License | Windows | macOS | Linux |
 |---|---|---|---|---|---|---|
-| `azc` | Fast subscription context switcher for Azure CLI | [mathwro/azc](https://github.com/mathwro/azc) | MIT | AMD64, ARM64 pending release | Intel, Apple Silicon pending release | AMD64, ARM64 pending release |
-| `pim-manager` | TUI for activating Microsoft PIM assignments | [mathwro/pim-manager](https://github.com/mathwro/pim-manager) | MIT | AMD64, ARM64 pending release | Intel, Apple Silicon pending release | AMD64, ARM64 pending release |
+| `azc` | Fast subscription context switcher for Azure CLI | [mathwro/azc](https://github.com/mathwro/azc) | MIT | AMD64, ARM64 | Intel, Apple Silicon | AMD64, ARM64 |
+| `pim-manager` | TUI for activating Microsoft PIM assignments | [mathwro/pim-manager](https://github.com/mathwro/pim-manager) | MIT | AMD64, ARM64 | Intel, Apple Silicon | AMD64, ARM64 |
 | `nwcli` | Network CLI toolbox | [mathwro/nwcli](https://github.com/mathwro/nwcli) | Upstream has no declared license | AMD64, ARM64 pending release | Intel, Apple Silicon pending release | AMD64, ARM64 pending release |
 
 The hosted CI matrix performs real installs on Windows AMD64/ARM64, macOS Intel/ARM64, and Linux AMD64/ARM64 after metadata exists. A missing runner or failed target blocks its matrix check and therefore blocks automatic merge; syntax-only checks never count as install coverage.

@@ -2,20 +2,8 @@ name: Validate Homebrew
 
 on:
   pull_request:
-    paths:
-      - "Formula/**"
-      - "packages/**"
-      - "scripts/**"
-      - "tests/**"
-      - ".github/workflows/**"
   push:
     branches: [main]
-    paths:
-      - "Formula/**"
-      - "packages/**"
-      - "scripts/**"
-      - "tests/**"
-      - ".github/workflows/**"
   workflow_dispatch:
 
 permissions:

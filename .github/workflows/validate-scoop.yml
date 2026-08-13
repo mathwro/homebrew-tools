@@ -2,20 +2,8 @@ name: Validate Scoop
 
 on:
   pull_request:
-    paths:
-      - "bucket/**"
-      - "packages/**"
-      - "scripts/**"
-      - "tests/**"
-      - ".github/workflows/**"
   push:
     branches: [main]
-    paths:
-      - "bucket/**"
-      - "packages/**"
-      - "scripts/**"
-      - "tests/**"
-      - ".github/workflows/**"
   workflow_dispatch:
 
 permissions:
