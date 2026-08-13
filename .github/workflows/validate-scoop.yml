@@ -87,6 +87,7 @@ jobs:
           $env:SCOOP = Join-Path $env:USERPROFILE "scoop"
           $scoopRoot = Join-Path $env:SCOOP "apps/scoop/current"
           New-Item -ItemType Directory -Force -Path $scoopRoot | Out-Null
+          New-Item -ItemType Directory -Force -Path (Join-Path $env:SCOOP "shims") | Out-Null
           git -C $scoopRoot init
           git -C $scoopRoot remote add origin https://github.com/ScoopInstaller/Scoop.git
           git -C $scoopRoot fetch --depth 1 origin b588a06e41d920d2123ec70aee682bae14935939
