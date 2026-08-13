@@ -74,6 +74,8 @@ jobs:
       tag: ${{ needs.normalize.outputs.tag }}
       version: ${{ needs.normalize.outputs.version }}
       release_id: ${{ needs.normalize.outputs.release_id }}
+    secrets:
+      automation_token: ${{ secrets.AUTOMATION_TOKEN }}
     permissions:
       contents: write
       pull-requests: write
