@@ -1,0 +1,36 @@
+{
+  "package": "pim-manager",
+  "repository": "mathwro/pim-manager",
+  "description": "TUI for activating Microsoft PIM assignments",
+  "license": null,
+  "executable": "pim-manager",
+  "version_command": [
+    "--version"
+  ],
+  "targets": {
+    "windows_amd64": {
+      "asset": "{package}_{version}_windows_amd64.zip",
+      "archive_executable": "pim-manager.exe"
+    },
+    "windows_arm64": {
+      "asset": "{package}_{version}_windows_arm64.zip",
+      "archive_executable": "pim-manager.exe"
+    },
+    "darwin_amd64": {
+      "asset": "{package}_{version}_darwin_amd64.tar.gz",
+      "archive_executable": "pim-manager"
+    },
+    "darwin_arm64": {
+      "asset": "{package}_{version}_darwin_arm64.tar.gz",
+      "archive_executable": "pim-manager"
+    },
+    "linux_amd64": {
+      "asset": "{package}_{version}_linux_amd64.tar.gz",
+      "archive_executable": "pim-manager"
+    },
+    "linux_arm64": {
+      "asset": "{package}_{version}_linux_arm64.tar.gz",
+      "archive_executable": "pim-manager"
+    }
+  }
+}

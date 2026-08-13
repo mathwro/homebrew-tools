@@ -1,0 +1,50 @@
+name: Reconcile releases
+
+on:
+  schedule:
+    - cron: "23 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  discover:
+    name: Discover missed stable releases
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.reconcile.outputs.matrix }}
+      count: ${{ steps.reconcile.outputs.count }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Find pending updates
+        id: reconcile
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          matrix="$(python scripts/package_repository.py reconcile)"
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          count="$(MATRIX="$matrix" python -c 'import json,os; print(len(json.loads(os.environ["MATRIX"])["include"]))')"
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+
+  update:
+    name: Reconcile ${{ matrix.package }}
+    needs: discover
+    if: needs.discover.outputs.count != '0'
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.discover.outputs.matrix) }}
+    uses: ./.github/workflows/run-update.yml
+    with:
+      repository: ${{ matrix.repository }}
+      package: ${{ matrix.package }}
+      tag: ${{ matrix.tag }}
+      version: ${{ matrix.version }}
+    permissions:
+      contents: write
+      pull-requests: write

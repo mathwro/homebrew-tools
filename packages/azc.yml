@@ -1,0 +1,36 @@
+{
+  "package": "azc",
+  "repository": "mathwro/azc",
+  "description": "A fast subscription context switcher for Azure CLI",
+  "license": "MIT",
+  "executable": "azc",
+  "version_command": [
+    "version"
+  ],
+  "targets": {
+    "windows_amd64": {
+      "asset": "{package}_{version}_windows_amd64.zip",
+      "archive_executable": "azc.exe"
+    },
+    "windows_arm64": {
+      "asset": "{package}_{version}_windows_arm64.zip",
+      "archive_executable": "azc.exe"
+    },
+    "darwin_amd64": {
+      "asset": "{package}_{version}_darwin_amd64.tar.gz",
+      "archive_executable": "azc"
+    },
+    "darwin_arm64": {
+      "asset": "{package}_{version}_darwin_arm64.tar.gz",
+      "archive_executable": "azc"
+    },
+    "linux_amd64": {
+      "asset": "{package}_{version}_linux_amd64.tar.gz",
+      "archive_executable": "azc"
+    },
+    "linux_arm64": {
+      "asset": "{package}_{version}_linux_arm64.tar.gz",
+      "archive_executable": "azc"
+    }
+  }
+}

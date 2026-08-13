@@ -1,0 +1,99 @@
+name: Validate Homebrew
+
+on:
+  pull_request:
+    paths:
+      - "Formula/**"
+      - "packages/**"
+      - "scripts/**"
+      - "tests/**"
+      - ".github/workflows/**"
+  push:
+    branches: [main]
+    paths:
+      - "Formula/**"
+      - "packages/**"
+      - "scripts/**"
+      - "tests/**"
+      - ".github/workflows/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  policy:
+    name: Homebrew repository policy
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Validate definitions and generated metadata
+        run: |
+          python scripts/package_repository.py validate-definitions
+          python scripts/validate_metadata.py repository
+          python -m unittest discover -s tests -v
+
+  changes:
+    name: Select Homebrew install tests
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+      count: ${{ steps.matrix.outputs.count }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Select affected package targets
+        id: matrix
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          matrix="$(python scripts/changed_packages.py homebrew --base "$BASE_SHA")"
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          count="$(MATRIX="$matrix" python -c 'import json,os; print(len(json.loads(os.environ["MATRIX"])["include"]))')"
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+
+  install:
+    name: Homebrew install (${{ matrix.package }}, ${{ matrix.target }})
+    needs: [policy, changes]
+    if: needs.changes.outputs.count != '0'
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.changes.outputs.matrix) }}
+    runs-on: ${{ matrix.runner }}
+    env:
+      PACKAGE: ${{ matrix.package }}
+      HOMEBREW_NO_AUTO_UPDATE: "1"
+      HOMEBREW_NO_INSTALL_CLEANUP: "1"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Validate formula URLs and hashes
+        run: python scripts/validate_metadata.py homebrew "$PACKAGE" --online
+      - name: Tap checkout and validate formula
+        run: |
+          tap="${RUNNER_TEMP}/homebrew-tools-test"
+          mkdir -p "$(dirname "$tap")"
+          ln -s "$GITHUB_WORKSPACE" "$tap"
+          brew tap mathwro/tools-test "$tap"
+          brew style "mathwro/tools-test/$PACKAGE"
+          brew audit --strict --online "mathwro/tools-test/$PACKAGE"
+      - name: Install, test, verify, and uninstall
+        run: |
+          version="$(python -c 'import json,os; print(json.load(open("bucket/" + os.environ["PACKAGE"] + ".json"))["version"])')"
+          brew install "mathwro/tools-test/$PACKAGE"
+          executable="$(brew --prefix "$PACKAGE")/bin/$PACKAGE"
+          python scripts/smoke_version.py "$PACKAGE" "$version" "$executable"
+          brew test "mathwro/tools-test/$PACKAGE"
+          brew uninstall "$PACKAGE"
+          brew untap mathwro/tools-test

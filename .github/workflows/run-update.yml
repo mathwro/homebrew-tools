@@ -1,0 +1,91 @@
+name: Run package update
+
+on:
+  workflow_call:
+    inputs:
+      repository:
+        required: true
+        type: string
+      package:
+        required: true
+        type: string
+      tag:
+        required: true
+        type: string
+      version:
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: package-update-${{ inputs.package }}
+  cancel-in-progress: true
+
+jobs:
+  update:
+    name: Update ${{ inputs.package }} to ${{ inputs.version }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Verify release and generate metadata
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PACKAGE: ${{ inputs.package }}
+          REPOSITORY: ${{ inputs.repository }}
+          TAG: ${{ inputs.tag }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          python scripts/package_repository.py update \
+            --package "$PACKAGE" \
+            --repository "$REPOSITORY" \
+            --tag "$TAG" \
+            --version "$VERSION" > "$RUNNER_TEMP/verified-release.json"
+          python scripts/assert_update_diff.py "$PACKAGE"
+      - name: Stop when release is already current
+        id: diff
+        run: |
+          if git diff --quiet -- Formula bucket; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Commit generated metadata
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          PACKAGE: ${{ inputs.package }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          branch="automation/$PACKAGE-$VERSION"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$branch"
+          git add "bucket/$PACKAGE.json" "Formula/$PACKAGE.rb"
+          git commit -m "chore($PACKAGE): update to $VERSION"
+          git push --force-with-lease origin "$branch"
+      - name: Open or update one pull request
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PACKAGE: ${{ inputs.package }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          branch="automation/$PACKAGE-$VERSION"
+          title="chore($PACKAGE): update to $VERSION"
+          python scripts/render_pr_body.py "$RUNNER_TEMP/verified-release.json" "$RUNNER_TEMP/pr-body.md"
+          existing="$(gh pr list --head "$branch" --state open --json number --jq '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            gh pr edit "$existing" --title "$title" --body-file "$RUNNER_TEMP/pr-body.md"
+          else
+            gh pr create --base main --head "$branch" --title "$title" --body-file "$RUNNER_TEMP/pr-body.md"
+          fi
