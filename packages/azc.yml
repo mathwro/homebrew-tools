@@ -1,7 +1,7 @@
 {
   "package": "azc",
   "repository": "mathwro/azc",
-  "description": "A fast subscription context switcher for Azure CLI",
+  "description": "Fast subscription context switcher for Azure CLI",
   "license": "MIT",
   "executable": "azc",
   "version_command": [
