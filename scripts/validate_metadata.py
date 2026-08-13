@@ -73,11 +73,10 @@ def validate_scoop(package: Package) -> tuple[str, dict[str, Any]]:
 def validate_formula(package: Package) -> tuple[str, dict[str, Any]]:
     path = FORMULA_DIR / f"{package.name}.rb"
     actual = path.read_text(encoding="utf-8")
-    version_match = re.search(r'^  version "([^"]+)"$', actual, re.MULTILINE)
-    if version_match is None:
-        raise PackageError(f"{path} has no version")
-    version = version_match.group(1)
-    parse_version(version)
+    scoop_path = BUCKET_DIR / f"{package.name}.json"
+    if not scoop_path.exists():
+        raise PackageError(f"{path} has no companion Scoop manifest")
+    version, _ = validate_scoop(package)
     pairs = re.findall(
         r'^      url "([^"]+)"\n      sha256 "([0-9a-f]+)"$', actual, re.MULTILINE
     )
