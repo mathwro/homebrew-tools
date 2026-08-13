@@ -1,7 +1,7 @@
 {
   "package": "nwcli",
   "repository": "mathwro/nwcli",
-  "description": "Network CLI toolbox",
+  "description": "Network CLI Toolbox",
   "license": null,
   "executable": "nwcli",
   "version_command": [
