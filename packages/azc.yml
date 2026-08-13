@@ -5,7 +5,7 @@
   "license": "MIT",
   "executable": "azc",
   "version_command": [
-    "version"
+    "--version"
   ],
   "targets": {
     "windows_amd64": {

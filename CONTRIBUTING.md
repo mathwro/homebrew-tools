@@ -38,7 +38,7 @@ Each source repository must publish:
 - immutable assets; corrections use a new patch release;
 - a non-mutating command whose output contains the released version.
 
-After release verification, the source workflow sends a `repository_dispatch` event of type `cli-release`:
+After release verification, a source workflow sends a `repository_dispatch` event. The canonical complete form uses type `cli-release`:
 
 ```json
 {
@@ -52,7 +52,9 @@ After release verification, the source workflow sends a `repository_dispatch` ev
 }
 ```
 
-The payload is a hint. The distribution repository accepts only checked-in package/repository pairs and derives URLs, commands, archive paths, and metadata from its definition.
+The distribution workflow also normalizes the existing `azc` `package-release` payload (`repository`, `tag`, and `release_id`) and `pim-manager` `cli-release-published` payload (`owner`, repository name, `package`, and `tag`). Missing package and version values are derived only after the checked-in repository allowlist and stable tag are validated. A supplied GitHub release ID must match the exact release fetched by tag.
+
+Every payload is a hint. The distribution repository accepts only checked-in package/repository pairs and derives URLs, commands, archive paths, and metadata from its definition.
 
 ## Review and verification
 

@@ -247,6 +247,75 @@ def validate_tag_version(tag: str, version: str) -> None:
         raise PackageError(f"tag/version mismatch: expected v{version}, got {tag}")
 
 
+def normalize_event(
+    owner: str,
+    repository: str,
+    package_name: str,
+    tag: str,
+    version: str,
+    release_id: str,
+    packages_dir: Path = PACKAGES_DIR,
+) -> dict[str, str]:
+    derived_version = tag[1:] if tag.startswith("v") else ""
+    validate_tag_version(tag, derived_version)
+    if version and version != derived_version:
+        raise PackageError(
+            f"payload version does not match tag: expected {derived_version}, got {version}"
+        )
+
+    packages = load_packages(packages_dir)
+    by_name = {package.name: package for package in packages}
+    if repository:
+        if "/" in repository:
+            full_repository = repository
+            repository_owner = repository.split("/", 1)[0]
+            if owner and owner != repository_owner:
+                raise PackageError(
+                    f"payload owner does not match repository: {owner} != {repository_owner}"
+                )
+        else:
+            if not owner:
+                raise PackageError(
+                    "payload owner is required when repository is not OWNER/REPOSITORY"
+                )
+            full_repository = f"{owner}/{repository}"
+        if not REPOSITORY_RE.fullmatch(full_repository):
+            raise PackageError(f"invalid payload repository: {full_repository!r}")
+        matches = [
+            package for package in packages if package.repository == full_repository
+        ]
+        if len(matches) != 1:
+            raise PackageError(f"repository is not allowlisted: {full_repository}")
+        package = matches[0]
+    elif package_name:
+        package = by_name.get(package_name)
+        if package is None:
+            raise PackageError(f"package is not allowlisted: {package_name}")
+        full_repository = package.repository
+    else:
+        raise PackageError("payload must include repository or package")
+
+    if package_name and package_name != package.name:
+        raise PackageError(
+            f"payload package does not match repository: {package_name} != {package.name}"
+        )
+    if release_id and not re.fullmatch(r"[1-9][0-9]*", release_id):
+        raise PackageError(f"invalid GitHub release ID: {release_id!r}")
+    return {
+        "repository": full_repository,
+        "package": package.name,
+        "tag": tag,
+        "version": derived_version,
+        "release_id": release_id,
+    }
+
+
+def write_github_outputs(path: Path, values: dict[str, str]) -> None:
+    with path.open("a", encoding="utf-8", newline="\n") as output:
+        for key, value in values.items():
+            output.write(f"{key}={value}\n")
+
+
 def parse_checksums(content: bytes) -> dict[str, str]:
     try:
         text = content.decode("utf-8")
@@ -450,7 +519,11 @@ def _release_assets(release: dict[str, Any]) -> dict[str, str]:
 
 
 def verify_release(
-    package: Package, tag: str, version: str, client: GitHubClient
+    package: Package,
+    tag: str,
+    version: str,
+    client: GitHubClient,
+    release_id: int | None = None,
 ) -> dict[str, Any]:
     validate_tag_version(tag, version)
     release = client.get_json(f"/repos/{package.repository}/releases/tags/{tag}")
@@ -460,6 +533,10 @@ def verify_release(
         raise PackageError("GitHub release tag does not match the requested tag")
     if release.get("draft") is not False or release.get("prerelease") is not False:
         raise PackageError("release must be published, non-draft, and non-prerelease")
+    if release_id is not None and release.get("id") != release_id:
+        raise PackageError(
+            f"GitHub release ID mismatch: expected {release_id}, got {release.get('id')}"
+        )
     assets = _release_assets(release)
     checksum_url = assets.get("checksums.txt")
     if checksum_url is None:
@@ -511,6 +588,7 @@ def verify_release(
         "version": version,
         "release_url": release_url,
         "assets": selected,
+        "release_id": release.get("id"),
     }
 
 
@@ -671,11 +749,16 @@ def _atomic_write(path: Path, content: str) -> None:
 
 
 def update_package(
-    package: Package, tag: str, version: str, client: GitHubClient, root: Path = ROOT
+    package: Package,
+    tag: str,
+    version: str,
+    client: GitHubClient,
+    root: Path = ROOT,
+    release_id: int | None = None,
 ) -> dict[str, Any]:
     bucket_dir = root / "bucket"
     enforce_no_downgrade(package, version, bucket_dir)
-    verified = verify_release(package, tag, version, client)
+    verified = verify_release(package, tag, version, client, release_id)
     scoop = render_scoop(package, verified)
     formula = render_formula(package, verified)
     _atomic_write(bucket_dir / f"{package.name}.json", scoop)
@@ -771,12 +854,35 @@ def main(argv: Iterable[str] | None = None) -> int:
         subparser.add_argument("--repository", required=True)
         subparser.add_argument("--tag", required=True)
         subparser.add_argument("--version", required=True)
+        subparser.add_argument("--release-id", default="")
+    normalize_parser = subparsers.add_parser(
+        "normalize-event", help="normalize an allowlisted source release event"
+    )
+    normalize_parser.add_argument("--owner", default="")
+    normalize_parser.add_argument("--repository", default="")
+    normalize_parser.add_argument("--package", default="")
+    normalize_parser.add_argument("--tag", required=True)
+    normalize_parser.add_argument("--version", default="")
+    normalize_parser.add_argument("--release-id", default="")
+    normalize_parser.add_argument("--github-output", required=True, type=Path)
     subparsers.add_parser(
         "validate-definitions", help="validate every package definition"
     )
     subparsers.add_parser("reconcile", help="print pending updates as a JSON matrix")
     args = parser.parse_args(list(argv) if argv is not None else None)
     try:
+        if args.command == "normalize-event":
+            event = normalize_event(
+                args.owner,
+                args.repository,
+                args.package,
+                args.tag,
+                args.version,
+                args.release_id,
+            )
+            write_github_outputs(args.github_output, event)
+            print(json.dumps(event, sort_keys=True))
+            return 0
         token = os.environ.get("GITHUB_TOKEN")
         client = GitHubClient(token)
         if args.command == "validate-definitions":
@@ -792,10 +898,15 @@ def main(argv: Iterable[str] | None = None) -> int:
                 f"repository is not allowlisted for {package.name}: expected {package.repository}, got {args.repository}"
             )
         enforce_no_downgrade(package, args.version)
+        if args.release_id and not re.fullmatch(r"[1-9][0-9]*", args.release_id):
+            raise PackageError(f"invalid GitHub release ID: {args.release_id!r}")
+        release_id = int(args.release_id) if args.release_id else None
         if args.command == "verify":
-            result = verify_release(package, args.tag, args.version, client)
+            result = verify_release(package, args.tag, args.version, client, release_id)
         else:
-            result = update_package(package, args.tag, args.version, client)
+            result = update_package(
+                package, args.tag, args.version, client, release_id=release_id
+            )
         print(json.dumps(result, indent=2, sort_keys=True))
         return 0
     except PackageError as error:
