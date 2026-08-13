@@ -9,10 +9,31 @@ The initial package definitions are checked in, but installation is intentionall
 | Tool | Description | Source | License | Windows | macOS | Linux |
 |---|---|---|---|---|---|---|
 | `azc` | Fast subscription context switcher for Azure CLI | [mathwro/azc](https://github.com/mathwro/azc) | MIT | AMD64, ARM64 pending release | Intel, Apple Silicon pending release | AMD64, ARM64 pending release |
-| `pim-manager` | TUI for activating Microsoft PIM assignments | [mathwro/pim-manager](https://github.com/mathwro/pim-manager) | Upstream has no declared license | AMD64, ARM64 pending release | Intel, Apple Silicon pending release | AMD64, ARM64 pending release |
+| `pim-manager` | TUI for activating Microsoft PIM assignments | [mathwro/pim-manager](https://github.com/mathwro/pim-manager) | MIT | AMD64, ARM64 pending release | Intel, Apple Silicon pending release | AMD64, ARM64 pending release |
 | `nwcli` | Network CLI toolbox | [mathwro/nwcli](https://github.com/mathwro/nwcli) | Upstream has no declared license | AMD64, ARM64 pending release | Intel, Apple Silicon pending release | AMD64, ARM64 pending release |
 
 The hosted CI matrix performs real installs on Windows AMD64/ARM64, macOS Intel/ARM64, and Linux AMD64/ARM64 after metadata exists. A missing runner or failed target blocks its matrix check and therefore blocks automatic merge; syntax-only checks never count as install coverage.
+
+## Shared source workflows
+
+Source repositories contain only a typed `release.json` and a thin caller workflow. `.github/workflows/release-tool.yml` owns tag validation, Go/Rust toolchain setup, tests, six native builds, version/help smoke tests, deterministic archives, checksums, environment-gated publication, and package notification.
+
+```yaml
+jobs:
+  release:
+    permissions:
+      contents: write
+    uses: mathwro/homebrew-tools/.github/workflows/release-tool.yml@main
+    with:
+      tag: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+      dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || (github.event_name == 'push' && contains(github.ref_name, '-')) }}
+    secrets:
+      distribution_token: ${{ secrets.DISTRIBUTION_DISPATCH_TOKEN }}
+```
+
+The typed adapters deliberately do not accept repository-provided shell commands. Supported Go or Rust tools onboard through configuration only; supporting another language means adding and testing one adapter here, after which tools using that language need no workflow redesign. `.github/workflows/lint-workflows.yml` centralizes workflow linting, and `.github/workflows/notify-release.yml` is the separately reusable canonical handoff.
+
+The caller needs one repository secret, `DISTRIBUTION_DISPATCH_TOKEN`, containing a fine-grained token restricted to this repository with permission to send repository dispatches. Merge shared-workflow and adapter changes here before updating consumer references to `@main`.
 
 ## Scoop
 

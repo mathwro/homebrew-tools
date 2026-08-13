@@ -20,6 +20,7 @@ from package_repository import (
     enforce_no_downgrade,
     inspect_archive,
     load_package,
+    normalize_event,
     parse_checksums,
     parse_version,
     reconcile,
@@ -112,6 +113,7 @@ def valid_release(
     assets.append({"name": "checksums.txt", "browser_download_url": checksum_url})
     content[checksum_url] = ("\n".join(checksums) + "\n").encode()
     release = {
+        "id": 123,
         "tag_name": f"v{version}",
         "draft": False,
         "prerelease": False,
@@ -157,6 +159,18 @@ class PackageRepositoryTests(unittest.TestCase):
         self.assertEqual(set(verified["assets"]), set(package.targets))
         self.assertIn('"version": "1.2.3"', render_scoop(package, verified))
         self.assertIn("class Tool < Formula", render_formula(package, verified))
+
+    def test_release_id_must_match_exact_release(self) -> None:
+        package = test_package()
+        release, content = valid_release(package)
+        with self.assertRaisesRegex(PackageError, "release ID mismatch"):
+            verify_release(
+                package,
+                "v1.2.3",
+                "1.2.3",
+                FakeClient(release, content),  # type: ignore[arg-type]
+                release_id=456,
+            )
 
     def test_draft_and_prerelease_fail_closed(self) -> None:
         package = test_package()
@@ -224,6 +238,36 @@ class PackageRepositoryTests(unittest.TestCase):
     def test_unknown_package_fails_closed(self) -> None:
         with self.assertRaises(PackageError):
             load_package("unknown-package")
+
+    def test_normalizes_canonical_dispatch_contract(self) -> None:
+        self.assertEqual(
+            normalize_event(
+                "mathwro/azc",
+                "azc",
+                "v1.2.3",
+                "1.2.3",
+                "123",
+            ),
+            {
+                "repository": "mathwro/azc",
+                "package": "azc",
+                "tag": "v1.2.3",
+                "version": "1.2.3",
+                "release_id": "123",
+            },
+        )
+
+    def test_event_normalization_rejects_conflicting_untrusted_fields(self) -> None:
+        invalid_events = (
+            ("azc", "azc", "v1.2.3", "1.2.3", ""),
+            ("mathwro/azc", "pim-manager", "v1.2.3", "1.2.3", ""),
+            ("mathwro/azc", "azc", "v1.2.3", "1.2.4", ""),
+            ("mathwro/azc", "azc", "v1.2.3", "1.2.3", "not-an-id"),
+            ("mathwro/azc", "azc", "v1.2.3", "", ""),
+        )
+        for event in invalid_events:
+            with self.subTest(event=event), self.assertRaises(PackageError):
+                normalize_event(*event)
 
     def test_rendering_the_same_release_is_byte_identical(self) -> None:
         package = test_package()

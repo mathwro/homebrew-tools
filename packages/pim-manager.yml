@@ -2,7 +2,7 @@
   "package": "pim-manager",
   "repository": "mathwro/pim-manager",
   "description": "TUI for activating Microsoft PIM assignments",
-  "license": null,
+  "license": "MIT",
   "executable": "pim-manager",
   "version_command": [
     "--version"
