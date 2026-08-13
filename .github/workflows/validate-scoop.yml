@@ -95,13 +95,34 @@ jobs:
           $scoop = Join-Path $scoopRoot "bin/scoop.ps1"
           $definition = Get-Content "packages/$env:PACKAGE.yml" -Raw | ConvertFrom-Json
           $manifest = Get-Content "bucket/$env:PACKAGE.json" -Raw | ConvertFrom-Json
-          & $scoop bucket add homebrew-tools-test $env:GITHUB_WORKSPACE
+          $bucketRoot = Join-Path $env:SCOOP "buckets/homebrew-tools-test"
+          New-Item -ItemType Directory -Force -Path (Split-Path $bucketRoot) | Out-Null
+          git clone --quiet $env:GITHUB_WORKSPACE $bucketRoot
+          if ($LASTEXITCODE -ne 0) {
+            throw "failed to clone test bucket"
+          }
+          $installed = $false
           try {
             & $scoop install "homebrew-tools-test/$env:PACKAGE"
+            if ($LASTEXITCODE -ne 0) {
+              throw "Scoop install failed for $env:PACKAGE"
+            }
+            $installed = $true
             $executable = (& $scoop which $definition.executable | Select-Object -First 1)
+            if ([string]::IsNullOrWhiteSpace($executable)) {
+              throw "Scoop did not expose $($definition.executable)"
+            }
             python scripts/smoke_version.py $env:PACKAGE $manifest.version $executable
+            if ($LASTEXITCODE -ne 0) {
+              throw "version smoke test failed for $env:PACKAGE"
+            }
           }
           finally {
-            & $scoop uninstall $env:PACKAGE
-            & $scoop bucket rm homebrew-tools-test
+            if ($installed) {
+              & $scoop uninstall $env:PACKAGE
+              if ($LASTEXITCODE -ne 0) {
+                throw "Scoop uninstall failed for $env:PACKAGE"
+              }
+            }
+            Remove-Item $bucketRoot -Recurse -Force -ErrorAction SilentlyContinue
           }
