@@ -45,6 +45,8 @@ jobs:
       package: ${{ matrix.package }}
       tag: ${{ matrix.tag }}
       version: ${{ matrix.version }}
+    secrets:
+      automation_token: ${{ secrets.AUTOMATION_TOKEN }}
     permissions:
       contents: write
       pull-requests: write

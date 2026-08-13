@@ -19,6 +19,9 @@ on:
         required: false
         type: string
         default: ""
+    secrets:
+      automation_token:
+        required: true
 
 permissions:
   contents: write
@@ -38,6 +41,7 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: true
+          token: ${{ secrets.automation_token }}
       - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
@@ -84,7 +88,7 @@ jobs:
       - name: Open or update one pull request
         if: steps.diff.outputs.changed == 'true'
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.automation_token }}
           PACKAGE: ${{ inputs.package }}
           VERSION: ${{ inputs.version }}
         run: |
