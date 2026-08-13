@@ -252,7 +252,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          release="$(
+          find_release() {
             gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" |
               jq -c --arg tag "$TAG" '
                 [.[] | select(.tag_name == $tag)] |
@@ -261,7 +261,8 @@ jobs:
                 else error("multiple releases use tag " + $tag)
                 end
               '
-          )"
+          }
+          release="$(find_release)"
           if [[ -z "$release" ]]; then
             release_flags=()
             if [[ "$PRERELEASE" == true ]]; then
@@ -274,15 +275,14 @@ jobs:
               --generate-notes \
               --draft \
               "${release_flags[@]}"
-            release="$(
-              gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" |
-                jq -c --arg tag "$TAG" '
-                  [.[] | select(.tag_name == $tag and .draft)] |
-                  if length == 1 then .[0]
-                  else error("new draft release not found for tag " + $tag)
-                  end
-                '
-            )"
+            for delay in 1 2 3 4 5; do
+              release="$(find_release)"
+              if [[ -n "$release" ]]; then
+                break
+              fi
+              sleep "$delay"
+            done
+            [[ -n "$release" ]]
           fi
           [[ "$(jq -r .draft <<<"$release")" == true ]]
           [[ "$(jq -r .prerelease <<<"$release")" == "$PRERELEASE" ]]
