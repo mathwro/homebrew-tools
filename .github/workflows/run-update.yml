@@ -60,8 +60,10 @@ jobs:
           python scripts/assert_update_diff.py "$PACKAGE"
       - name: Stop when release is already current
         id: diff
+        env:
+          PACKAGE: ${{ inputs.package }}
         run: |
-          if git diff --quiet -- Formula bucket; then
+          if [[ -z "$(git status --porcelain -- "Formula/$PACKAGE.rb" "bucket/$PACKAGE.json")" ]]; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
