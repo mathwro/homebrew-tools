@@ -1,0 +1,30 @@
+{
+    "version": "0.1.0",
+    "description": "A fast subscription context switcher for Azure CLI",
+    "homepage": "https://github.com/mathwro/azc",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/mathwro/azc/releases/download/v0.1.0/azc_0.1.0_windows_amd64.zip",
+            "hash": "303e29ea7a399d616a75774c7aa73f20a7ca26db3ee546ebda6694f34b7c30d3"
+        },
+        "arm64": {
+            "url": "https://github.com/mathwro/azc/releases/download/v0.1.0/azc_0.1.0_windows_arm64.zip",
+            "hash": "f834bea8de67dd45b32913da91d5def91e8e2e917aacfd9f426c11b483ec0ee7"
+        }
+    },
+    "bin": "azc.exe",
+    "checkver": {
+        "github": "https://github.com/mathwro/azc"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/mathwro/azc/releases/download/v$version/azc_$version_windows_amd64.zip"
+            },
+            "arm64": {
+                "url": "https://github.com/mathwro/azc/releases/download/v$version/azc_$version_windows_arm64.zip"
+            }
+        }
+    }
+}
