@@ -248,7 +248,6 @@ def validate_tag_version(tag: str, version: str) -> None:
 
 
 def normalize_event(
-    owner: str,
     repository: str,
     package_name: str,
     tag: str,
@@ -256,56 +255,29 @@ def normalize_event(
     release_id: str,
     packages_dir: Path = PACKAGES_DIR,
 ) -> dict[str, str]:
-    derived_version = tag[1:] if tag.startswith("v") else ""
-    validate_tag_version(tag, derived_version)
-    if version and version != derived_version:
-        raise PackageError(
-            f"payload version does not match tag: expected {derived_version}, got {version}"
-        )
+    validate_tag_version(tag, version)
+    if not REPOSITORY_RE.fullmatch(repository):
+        raise PackageError(f"invalid payload repository: {repository!r}")
+    if not PACKAGE_RE.fullmatch(package_name):
+        raise PackageError(f"invalid payload package: {package_name!r}")
 
     packages = load_packages(packages_dir)
-    by_name = {package.name: package for package in packages}
-    if repository:
-        if "/" in repository:
-            full_repository = repository
-            repository_owner = repository.split("/", 1)[0]
-            if owner and owner != repository_owner:
-                raise PackageError(
-                    f"payload owner does not match repository: {owner} != {repository_owner}"
-                )
-        else:
-            if not owner:
-                raise PackageError(
-                    "payload owner is required when repository is not OWNER/REPOSITORY"
-                )
-            full_repository = f"{owner}/{repository}"
-        if not REPOSITORY_RE.fullmatch(full_repository):
-            raise PackageError(f"invalid payload repository: {full_repository!r}")
-        matches = [
-            package for package in packages if package.repository == full_repository
-        ]
-        if len(matches) != 1:
-            raise PackageError(f"repository is not allowlisted: {full_repository}")
-        package = matches[0]
-    elif package_name:
-        package = by_name.get(package_name)
-        if package is None:
-            raise PackageError(f"package is not allowlisted: {package_name}")
-        full_repository = package.repository
-    else:
-        raise PackageError("payload must include repository or package")
-
-    if package_name and package_name != package.name:
+    matches = [
+        package
+        for package in packages
+        if package.name == package_name and package.repository == repository
+    ]
+    if len(matches) != 1:
         raise PackageError(
-            f"payload package does not match repository: {package_name} != {package.name}"
+            f"package/repository pair is not allowlisted: {package_name} -> {repository}"
         )
     if release_id and not re.fullmatch(r"[1-9][0-9]*", release_id):
         raise PackageError(f"invalid GitHub release ID: {release_id!r}")
     return {
-        "repository": full_repository,
-        "package": package.name,
+        "repository": repository,
+        "package": package_name,
         "tag": tag,
-        "version": derived_version,
+        "version": version,
         "release_id": release_id,
     }
 
@@ -858,11 +830,10 @@ def main(argv: Iterable[str] | None = None) -> int:
     normalize_parser = subparsers.add_parser(
         "normalize-event", help="normalize an allowlisted source release event"
     )
-    normalize_parser.add_argument("--owner", default="")
-    normalize_parser.add_argument("--repository", default="")
-    normalize_parser.add_argument("--package", default="")
+    normalize_parser.add_argument("--repository", required=True)
+    normalize_parser.add_argument("--package", required=True)
     normalize_parser.add_argument("--tag", required=True)
-    normalize_parser.add_argument("--version", default="")
+    normalize_parser.add_argument("--version", required=True)
     normalize_parser.add_argument("--release-id", default="")
     normalize_parser.add_argument("--github-output", required=True, type=Path)
     subparsers.add_parser(
@@ -873,7 +844,6 @@ def main(argv: Iterable[str] | None = None) -> int:
     try:
         if args.command == "normalize-event":
             event = normalize_event(
-                args.owner,
                 args.repository,
                 args.package,
                 args.tag,

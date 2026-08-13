@@ -1,0 +1,289 @@
+name: Build and publish CLI release
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: Annotated release tag to build
+        required: true
+        type: string
+      dry_run:
+        description: Build and validate without publishing or notifying
+        required: false
+        type: boolean
+        default: false
+      config_path:
+        description: Typed source release configuration
+        required: false
+        type: string
+        default: release.json
+    secrets:
+      distribution_token:
+        description: Fine-grained token allowed to dispatch the distribution repository
+        required: false
+    outputs:
+      release_id:
+        description: Published GitHub release ID; empty for a dry run
+        value: ${{ jobs.publish.outputs.release_id }}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: source-release-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate release source
+    runs-on: ubuntu-24.04
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
+      version: ${{ steps.release.outputs.version }}
+      stable: ${{ steps.release.outputs.stable }}
+      prerelease: ${{ steps.release.outputs.prerelease }}
+      commit: ${{ steps.release.outputs.commit }}
+      epoch: ${{ steps.release.outputs.epoch }}
+      package: ${{ steps.release.outputs.package }}
+      binary: ${{ steps.release.outputs.binary }}
+      adapter: ${{ steps.release.outputs.adapter }}
+      toolchain_file: ${{ steps.release.outputs.toolchain_file }}
+      matrix: ${{ steps.release.outputs.matrix }}
+    steps:
+      - name: Check out tagged caller source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ inputs.tag }}
+      - name: Check out central release implementation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: mathwro/homebrew-tools
+          ref: main
+          path: .release-system
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Validate tag, branch, version, and typed configuration
+        id: release
+        shell: bash
+        run: >-
+          python .release-system/scripts/source_release.py
+          --config '${{ inputs.config_path }}'
+          outputs
+          --tag '${{ inputs.tag }}'
+          --github-output "$GITHUB_OUTPUT"
+      - name: Preserve published release immutability
+        if: inputs.dry_run == false
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" >/dev/null 2>&1; then
+            echo "a GitHub release already exists for immutable tag $TAG" >&2
+            exit 1
+          fi
+
+  test:
+    name: Test ${{ needs.validate.outputs.adapter }} source
+    needs: validate
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out validated source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ needs.validate.outputs.commit }}
+      - name: Check out central release implementation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: mathwro/homebrew-tools
+          ref: main
+          path: .release-system
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Set up Go
+        if: needs.validate.outputs.adapter == 'go'
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+        with:
+          go-version-file: ${{ needs.validate.outputs.toolchain_file }}
+          cache: true
+      - name: Run adapter-native tests
+        run: >-
+          python .release-system/scripts/source_release.py
+          --config '${{ inputs.config_path }}'
+          test
+
+  build:
+    name: Build ${{ matrix.token }}
+    needs: [validate, test]
+    strategy:
+      fail-fast: true
+      matrix: ${{ fromJSON(needs.validate.outputs.matrix) }}
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Check out validated source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ needs.validate.outputs.commit }}
+      - name: Check out central release implementation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: mathwro/homebrew-tools
+          ref: main
+          path: .release-system
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Set up Go
+        if: needs.validate.outputs.adapter == 'go'
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+        with:
+          go-version-file: ${{ needs.validate.outputs.toolchain_file }}
+          cache: true
+      - name: Install Linux musl tools
+        if: needs.validate.outputs.adapter == 'rust' && runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install --yes musl-tools
+      - name: Install Rust target
+        if: needs.validate.outputs.adapter == 'rust'
+        run: rustup target add '${{ matrix.rust_target }}'
+      - name: Build, smoke, package, and inspect target
+        shell: bash
+        run: >-
+          python .release-system/scripts/source_release.py
+          --config '${{ inputs.config_path }}'
+          build
+          --tag '${{ needs.validate.outputs.tag }}'
+          --commit '${{ needs.validate.outputs.commit }}'
+          --epoch '${{ needs.validate.outputs.epoch }}'
+          --target '${{ matrix.token }}'
+          --output dist
+      - name: Upload target archive
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-${{ matrix.token }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 7
+
+  stage:
+    name: Verify complete release
+    needs: [validate, build]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out validated source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ needs.validate.outputs.commit }}
+      - name: Check out central release implementation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: mathwro/homebrew-tools
+          ref: main
+          path: .release-system
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Download all target archives
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        with:
+          pattern: release-*
+          path: staging
+          merge-multiple: true
+      - name: Inspect assets and generate canonical checksums
+        run: >-
+          python .release-system/scripts/source_release.py
+          --config '${{ inputs.config_path }}'
+          stage
+          --version '${{ needs.validate.outputs.version }}'
+          --directory staging
+      - name: Upload complete release
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-complete
+          path: staging/*
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    name: Publish immutable release
+    if: inputs.dry_run == false
+    needs: [validate, stage]
+    runs-on: ubuntu-24.04
+    environment: release
+    permissions:
+      contents: write
+    outputs:
+      release_id: ${{ steps.release.outputs.release_id }}
+    steps:
+      - name: Check out exact tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ needs.validate.outputs.tag }}
+      - name: Download complete release
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        with:
+          name: release-complete
+          path: staging
+      - name: Create, compare, and publish release
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PACKAGE: ${{ needs.validate.outputs.package }}
+          TAG: ${{ needs.validate.outputs.tag }}
+          COMMIT: ${{ needs.validate.outputs.commit }}
+          PRERELEASE: ${{ needs.validate.outputs.prerelease }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          release_flags=()
+          if [[ "$PRERELEASE" == true ]]; then
+            release_flags+=(--prerelease)
+          fi
+          gh release create "$TAG" staging/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$COMMIT" \
+            --title "$PACKAGE $TAG" \
+            --generate-notes \
+            --draft \
+            "${release_flags[@]}"
+          release="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG")"
+          [[ "$(jq -r .draft <<<"$release")" == true ]]
+          [[ "$(jq -r .prerelease <<<"$release")" == "$PRERELEASE" ]]
+          mapfile -t remote < <(jq -r '.assets[] | [.name, .size] | @tsv' <<<"$release" | sort)
+          mapfile -t local < <(find staging -maxdepth 1 -type f -printf '%f\t%s\n' | sort)
+          [[ "${remote[*]}" == "${local[*]}" ]]
+          release_id="$(jq -r .id <<<"$release")"
+          [[ "$release_id" =~ ^[1-9][0-9]*$ ]]
+          echo "release_id=$release_id" >>"$GITHUB_OUTPUT"
+          gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --latest
+
+  notify:
+    name: Update Scoop and Homebrew metadata
+    if: inputs.dry_run == false && needs.validate.outputs.stable == 'true'
+    needs: [validate, publish]
+    permissions:
+      contents: read
+    uses: mathwro/homebrew-tools/.github/workflows/notify-release.yml@main
+    with:
+      package: ${{ needs.validate.outputs.package }}
+      tag: ${{ needs.validate.outputs.tag }}
+      release_id: ${{ needs.publish.outputs.release_id }}
+    secrets:
+      distribution_token: ${{ secrets.distribution_token }}

@@ -239,14 +239,13 @@ class PackageRepositoryTests(unittest.TestCase):
         with self.assertRaises(PackageError):
             load_package("unknown-package")
 
-    def test_normalizes_azc_and_pim_manager_dispatch_contracts(self) -> None:
+    def test_normalizes_canonical_dispatch_contract(self) -> None:
         self.assertEqual(
             normalize_event(
-                "",
                 "mathwro/azc",
-                "",
+                "azc",
                 "v1.2.3",
-                "",
+                "1.2.3",
                 "123",
             ),
             {
@@ -257,30 +256,14 @@ class PackageRepositoryTests(unittest.TestCase):
                 "release_id": "123",
             },
         )
-        self.assertEqual(
-            normalize_event(
-                "mathwro",
-                "pim-manager",
-                "pim-manager",
-                "v2.3.4",
-                "",
-                "",
-            ),
-            {
-                "repository": "mathwro/pim-manager",
-                "package": "pim-manager",
-                "tag": "v2.3.4",
-                "version": "2.3.4",
-                "release_id": "",
-            },
-        )
 
     def test_event_normalization_rejects_conflicting_untrusted_fields(self) -> None:
         invalid_events = (
-            ("attacker", "mathwro/azc", "azc", "v1.2.3", "", ""),
-            ("", "mathwro/azc", "pim-manager", "v1.2.3", "", ""),
-            ("", "mathwro/azc", "azc", "v1.2.3", "1.2.4", ""),
-            ("", "mathwro/azc", "azc", "v1.2.3", "", "not-an-id"),
+            ("azc", "azc", "v1.2.3", "1.2.3", ""),
+            ("mathwro/azc", "pim-manager", "v1.2.3", "1.2.3", ""),
+            ("mathwro/azc", "azc", "v1.2.3", "1.2.4", ""),
+            ("mathwro/azc", "azc", "v1.2.3", "1.2.3", "not-an-id"),
+            ("mathwro/azc", "azc", "v1.2.3", "", ""),
         )
         for event in invalid_events:
             with self.subTest(event=event), self.assertRaises(PackageError):

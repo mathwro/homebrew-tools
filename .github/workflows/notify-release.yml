@@ -1,0 +1,98 @@
+name: Notify package repository
+
+on:
+  workflow_call:
+    inputs:
+      package:
+        description: Allowlisted package name in the distribution repository
+        required: true
+        type: string
+      tag:
+        description: Published stable release tag (vMAJOR.MINOR.PATCH)
+        required: true
+        type: string
+      release_id:
+        description: Optional GitHub release ID to bind the notification to
+        required: false
+        type: string
+        default: ""
+      distribution_repository:
+        description: OWNER/REPOSITORY receiving the package update event
+        required: false
+        type: string
+        default: mathwro/homebrew-tools
+    secrets:
+      distribution_token:
+        description: Fine-grained token allowed to dispatch the distribution repository
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    name: Notify ${{ inputs.distribution_repository }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Verify exact published stable release
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PACKAGE: ${{ inputs.package }}
+          TAG: ${{ inputs.tag }}
+          REQUESTED_RELEASE_ID: ${{ inputs.release_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$PACKAGE" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]]
+          [[ "$TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+
+          release="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG")"
+          jq -e --arg tag "$TAG" '
+            .tag_name == $tag and
+            .draft == false and
+            .prerelease == false and
+            ([.assets[] | select(.name == "checksums.txt")] | length) == 1
+          ' <<<"$release" >/dev/null
+
+          release_id="$(jq -r '.id' <<<"$release")"
+          [[ "$release_id" =~ ^[1-9][0-9]*$ ]]
+          if [[ -n "$REQUESTED_RELEASE_ID" ]]; then
+            [[ "$REQUESTED_RELEASE_ID" == "$release_id" ]]
+          fi
+
+          {
+            echo "version=${TAG#v}"
+            echo "release_id=$release_id"
+          } >>"$GITHUB_OUTPUT"
+
+      - name: Dispatch canonical package update
+        env:
+          GH_TOKEN: ${{ secrets.distribution_token }}
+          DISTRIBUTION_REPOSITORY: ${{ inputs.distribution_repository }}
+          PACKAGE: ${{ inputs.package }}
+          TAG: ${{ inputs.tag }}
+          VERSION: ${{ steps.release.outputs.version }}
+          RELEASE_ID: ${{ steps.release.outputs.release_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$DISTRIBUTION_REPOSITORY" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]
+
+          jq -n \
+            --arg repository "$GITHUB_REPOSITORY" \
+            --arg package "$PACKAGE" \
+            --arg tag "$TAG" \
+            --arg version "$VERSION" \
+            --argjson release_id "$RELEASE_ID" \
+            '{
+              event_type: "cli-release",
+              client_payload: {
+                repository: $repository,
+                package: $package,
+                tag: $tag,
+                version: $version,
+                release_id: $release_id
+              }
+            }' |
+            gh api --method POST "repos/$DISTRIBUTION_REPOSITORY/dispatches" --input -

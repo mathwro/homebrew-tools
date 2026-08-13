@@ -2,28 +2,24 @@ name: Update package
 
 on:
   repository_dispatch:
-    types: [cli-release, package-release, cli-release-published]
+    types: [cli-release]
   workflow_dispatch:
     inputs:
-      owner:
-        description: Repository owner when repository is not OWNER/REPOSITORY
-        required: false
-        type: string
       repository:
-        description: Allowlisted OWNER/REPOSITORY or repository name
+        description: Allowlisted OWNER/REPOSITORY
         required: true
         type: string
       package:
-        description: Optional allowlisted package name
-        required: false
+        description: Allowlisted package name
+        required: true
         type: string
       tag:
         description: Exact stable release tag
         required: true
         type: string
       version:
-        description: Optional stable SemVer; derived from tag when omitted
-        required: false
+        description: Stable SemVer matching the tag
+        required: true
         type: string
       release_id:
         description: Optional immutable GitHub release ID
@@ -55,7 +51,6 @@ jobs:
       - name: Normalize and allowlist event
         id: event
         env:
-          OWNER: ${{ github.event.client_payload.owner || inputs.owner }}
           REPOSITORY: ${{ github.event.client_payload.repository || inputs.repository }}
           PACKAGE: ${{ github.event.client_payload.package || inputs.package }}
           TAG: ${{ github.event.client_payload.tag || inputs.tag }}
@@ -63,7 +58,6 @@ jobs:
           RELEASE_ID: ${{ github.event.client_payload.release_id || inputs.release_id }}
         run: |
           python scripts/package_repository.py normalize-event \
-            --owner "$OWNER" \
             --repository "$REPOSITORY" \
             --package "$PACKAGE" \
             --tag "$TAG" \
