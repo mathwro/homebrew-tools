@@ -159,6 +159,7 @@ class PackageRepositoryTests(unittest.TestCase):
         self.assertEqual(set(verified["assets"]), set(package.targets))
         self.assertIn('"version": "1.2.3"', render_scoop(package, verified))
         self.assertIn("class Tool < Formula", render_formula(package, verified))
+        self.assertNotIn('  version "1.2.3"', render_formula(package, verified))
 
     def test_release_id_must_match_exact_release(self) -> None:
         package = test_package()

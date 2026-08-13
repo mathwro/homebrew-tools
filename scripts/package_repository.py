@@ -652,7 +652,6 @@ def render_formula(package: Package, verified: dict[str, Any]) -> str:
         f"class {package.formula_class} < Formula",
         f"  desc {_ruby_string(package.description)}",
         f"  homepage {_ruby_string(package.homepage)}",
-        f"  version {_ruby_string(version)}",
         f"  license {_ruby_string(package.license) if package.license else ':cannot_represent'}",
         "",
     ]
