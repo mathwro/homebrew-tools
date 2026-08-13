@@ -1,5 +1,5 @@
 class Azc < Formula
-  desc "A fast subscription context switcher for Azure CLI"
+  desc "Fast subscription context switcher for Azure CLI"
   homepage "https://github.com/mathwro/azc"
   license "MIT"
 

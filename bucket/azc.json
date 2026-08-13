@@ -1,6 +1,6 @@
 {
     "version": "0.1.0",
-    "description": "A fast subscription context switcher for Azure CLI",
+    "description": "Fast subscription context switcher for Azure CLI",
     "homepage": "https://github.com/mathwro/azc",
     "license": "MIT",
     "architecture": {
