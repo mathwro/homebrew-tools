@@ -1,16 +1,16 @@
 {
-    "version": "0.1.3",
+    "version": "0.2.0",
     "description": "TUI for activating Microsoft PIM assignments",
     "homepage": "https://github.com/mathwro/pim-manager",
     "license": "MIT",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/mathwro/pim-manager/releases/download/v0.1.3/pim-manager_0.1.3_windows_amd64.zip",
-            "hash": "581aaaa551e3486a91a0608fbf9bed9c0bb0efb2be3ce65ad1a99ae2883f388a"
+            "url": "https://github.com/mathwro/pim-manager/releases/download/v0.2.0/pim-manager_0.2.0_windows_amd64.zip",
+            "hash": "7a6b47b988aa72c6e4c40addea38e5be70e2fb64fb0ae737a87847b48a1a0903"
         },
         "arm64": {
-            "url": "https://github.com/mathwro/pim-manager/releases/download/v0.1.3/pim-manager_0.1.3_windows_arm64.zip",
-            "hash": "ecc02a98dc34cd25b2dac78ba1d371d775eb50b437a292eb1dcb7b392e53512f"
+            "url": "https://github.com/mathwro/pim-manager/releases/download/v0.2.0/pim-manager_0.2.0_windows_arm64.zip",
+            "hash": "06adbead153a53d281434569b207a2734ffd7cc941a2a59e89f4e18ce6c2d8b8"
         }
     },
     "bin": "pim-manager.exe",
