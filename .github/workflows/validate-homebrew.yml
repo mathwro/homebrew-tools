@@ -76,6 +76,7 @@ jobs:
           mkdir -p "$(dirname "$tap")"
           ln -s "$GITHUB_WORKSPACE" "$tap"
           brew tap mathwro/tools-test "$tap"
+          brew trust mathwro/tools-test
           brew style "mathwro/tools-test/$PACKAGE"
           brew audit --strict --online "mathwro/tools-test/$PACKAGE"
       - name: Install, test, verify, and uninstall
