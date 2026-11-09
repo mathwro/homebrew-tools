@@ -1,0 +1,22 @@
+# Normalize line endings to LF in the repo and working tree
+* text=auto eol=lf
+
+# Scripts must stay LF (shebangs break with CRLF)
+scripts/* text eol=lf
+*.py text eol=lf
+*.rb text eol=lf
+*.sh text eol=lf
+
+# Windows-only scripts
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.zip binary
+*.gz binary
+*.tar binary
