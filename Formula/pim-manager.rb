@@ -5,23 +5,23 @@ class PimManager < Formula
 
   on_macos do
     on_arm do
-      url "https://github.com/mathwro/pim-manager/releases/download/v0.4.1/pim-manager_0.4.1_darwin_arm64.tar.gz"
-      sha256 "623def842c095c8499cb20c5e6085f763babcc47324df71add4833de1157cafa"
+      url "https://github.com/mathwro/pim-manager/releases/download/v0.4.2/pim-manager_0.4.2_darwin_arm64.tar.gz"
+      sha256 "2f76aed3ef99b075d4c88c44d0a60c9af9532b2671d740abd2a87d2878f93b43"
     end
     on_intel do
-      url "https://github.com/mathwro/pim-manager/releases/download/v0.4.1/pim-manager_0.4.1_darwin_amd64.tar.gz"
-      sha256 "53b54c61418f1a0b7eafad3b72fe197920b37792b2fe39f234e3c5978438a0ee"
+      url "https://github.com/mathwro/pim-manager/releases/download/v0.4.2/pim-manager_0.4.2_darwin_amd64.tar.gz"
+      sha256 "40b4221fd07ddaaa41aa8caacf99c2e179064f5c0cce21b53e37717c3ec57680"
     end
   end
 
   on_linux do
     on_arm do
-      url "https://github.com/mathwro/pim-manager/releases/download/v0.4.1/pim-manager_0.4.1_linux_arm64.tar.gz"
-      sha256 "07e9f83fd78d8684553584ba4dee40ec9edfef7a4dd56d0db6850072895f0d85"
+      url "https://github.com/mathwro/pim-manager/releases/download/v0.4.2/pim-manager_0.4.2_linux_arm64.tar.gz"
+      sha256 "51751d76d5642b6c4e780ab9f0c424cae167d87dc2b04057aec8d1d766a7b359"
     end
     on_intel do
-      url "https://github.com/mathwro/pim-manager/releases/download/v0.4.1/pim-manager_0.4.1_linux_amd64.tar.gz"
-      sha256 "be1b41cbf6f2a1ee6fb245674896ed513de97c473615ad16908f94db4bc55433"
+      url "https://github.com/mathwro/pim-manager/releases/download/v0.4.2/pim-manager_0.4.2_linux_amd64.tar.gz"
+      sha256 "3b78f5b3d1e65f9271776f3a469622118a456a7a725d935d0c2b89388ab05d85"
     end
   end
 
