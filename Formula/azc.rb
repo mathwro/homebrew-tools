@@ -5,23 +5,23 @@ class Azc < Formula
 
   on_macos do
     on_arm do
-      url "https://github.com/mathwro/azc/releases/download/v0.5.1/azc_0.5.1_darwin_arm64.tar.gz"
-      sha256 "c09e1d126e0814b0b85fd1772bce0a2a2ad8fda9d473121fc632cd7aff5a7af1"
+      url "https://github.com/mathwro/azc/releases/download/v0.6.0/azc_0.6.0_darwin_arm64.tar.gz"
+      sha256 "468ae8ef1bea9691b48d5dcbe310c29a9a99b02d793fa31d957173a7fb79f426"
     end
     on_intel do
-      url "https://github.com/mathwro/azc/releases/download/v0.5.1/azc_0.5.1_darwin_amd64.tar.gz"
-      sha256 "2c40db6b2513d554e3627ed2c054daaec4922f3c2ba3c6e0fad6d53643e038bc"
+      url "https://github.com/mathwro/azc/releases/download/v0.6.0/azc_0.6.0_darwin_amd64.tar.gz"
+      sha256 "ac8874f2f72f72c2bc32b8d4f7cc748440bb26e27fd0601ffafdbd7f1829b3be"
     end
   end
 
   on_linux do
     on_arm do
-      url "https://github.com/mathwro/azc/releases/download/v0.5.1/azc_0.5.1_linux_arm64.tar.gz"
-      sha256 "662290fbe9a676d6bfb1d507034801e7974713a7d2b485e72fb8e334ee3e4a09"
+      url "https://github.com/mathwro/azc/releases/download/v0.6.0/azc_0.6.0_linux_arm64.tar.gz"
+      sha256 "9738f84c321c0bc6268bf61b9433f304d368c053379ab27f3161024d92c45aba"
     end
     on_intel do
-      url "https://github.com/mathwro/azc/releases/download/v0.5.1/azc_0.5.1_linux_amd64.tar.gz"
-      sha256 "ec4ec0c012d0945e57162a1e3ebcef59b83196ef36e23f1cee2d99cebd808d1a"
+      url "https://github.com/mathwro/azc/releases/download/v0.6.0/azc_0.6.0_linux_amd64.tar.gz"
+      sha256 "dd551898363848320f55c6f3d081da864c4d625fbce6a805a7d6ebed7266fd1c"
     end
   end
 
