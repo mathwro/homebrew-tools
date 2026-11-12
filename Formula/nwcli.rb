@@ -5,23 +5,23 @@ class Nwcli < Formula
 
   on_macos do
     on_arm do
-      url "https://github.com/mathwro/nwcli/releases/download/v0.1.0/nwcli_0.1.0_darwin_arm64.tar.gz"
-      sha256 "ab7ebe6b73be1c733a771b9bef8bb9d6114f78430f5e970a4456a7b041802808"
+      url "https://github.com/mathwro/nwcli/releases/download/v0.2.0/nwcli_0.2.0_darwin_arm64.tar.gz"
+      sha256 "4a383db3ccd3c080b7680001acd2e1e32d6474a6f1cbf1078a8d6c7630bc732a"
     end
     on_intel do
-      url "https://github.com/mathwro/nwcli/releases/download/v0.1.0/nwcli_0.1.0_darwin_amd64.tar.gz"
-      sha256 "3aa26b30fd2a8c4819b36c219618211d36502e788b1c8643a763f629f0b9ea7b"
+      url "https://github.com/mathwro/nwcli/releases/download/v0.2.0/nwcli_0.2.0_darwin_amd64.tar.gz"
+      sha256 "16e490c6f00b8bf6223604c59e5941c15f361be94f2b089aa94ca07b37551424"
     end
   end
 
   on_linux do
     on_arm do
-      url "https://github.com/mathwro/nwcli/releases/download/v0.1.0/nwcli_0.1.0_linux_arm64.tar.gz"
-      sha256 "c56d983b3c8c3c0b975ef9e9310c45388f0f098688f1fc0b29764d9956e550f5"
+      url "https://github.com/mathwro/nwcli/releases/download/v0.2.0/nwcli_0.2.0_linux_arm64.tar.gz"
+      sha256 "7403567d38f05063185caac5998bc426e421013c4a29a166fad8a29703f8f341"
     end
     on_intel do
-      url "https://github.com/mathwro/nwcli/releases/download/v0.1.0/nwcli_0.1.0_linux_amd64.tar.gz"
-      sha256 "49d1915e5432a931d7a391b864a19a6518e3dd6d121c421e0ff9f1fe5fdbf2fc"
+      url "https://github.com/mathwro/nwcli/releases/download/v0.2.0/nwcli_0.2.0_linux_amd64.tar.gz"
+      sha256 "497c9b933b743b8fd8f53ea90abb3791fd7e53b9310ed00b14c8cdd607e0eb7b"
     end
   end
 
