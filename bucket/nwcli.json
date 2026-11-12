@@ -2,7 +2,7 @@
     "version": "0.1.0",
     "description": "Network CLI Toolbox",
     "homepage": "https://github.com/mathwro/nwcli",
-    "license": "Unknown",
+    "license": "MIT",
     "architecture": {
         "64bit": {
             "url": "https://github.com/mathwro/nwcli/releases/download/v0.1.0/nwcli_0.1.0_windows_amd64.zip",

@@ -10,7 +10,7 @@ Package metadata is generated only after an upstream stable `vMAJOR.MINOR.PATCH`
 |---|---|---|---|---|---|---|
 | `azc` | Fast subscription context switcher for Azure CLI | [mathwro/azc](https://github.com/mathwro/azc) | MIT | AMD64, ARM64 | Intel, Apple Silicon | AMD64, ARM64 |
 | `pim-manager` | TUI for activating Microsoft PIM assignments | [mathwro/pim-manager](https://github.com/mathwro/pim-manager) | MIT | AMD64, ARM64 | Intel, Apple Silicon | AMD64, ARM64 |
-| `nwcli` | Network CLI Toolbox | [mathwro/nwcli](https://github.com/mathwro/nwcli) | Upstream has no declared license | AMD64, ARM64 pending release | Intel, Apple Silicon pending release | AMD64, ARM64 pending release |
+| `nwcli` | Network CLI Toolbox | [mathwro/nwcli](https://github.com/mathwro/nwcli) | MIT | AMD64, ARM64 | Intel, Apple Silicon | AMD64, ARM64 |
 
 The hosted CI matrix performs real installs on Windows AMD64/ARM64, macOS Intel/ARM64, and Linux AMD64/ARM64 after metadata exists. A missing runner or failed target blocks its matrix check and therefore blocks automatic merge; syntax-only checks never count as install coverage.
 
@@ -65,6 +65,6 @@ Replace `azc` with `pim-manager` or `nwcli`. Fully qualified formula names avoid
 - A URL or hash fails: open an issue here and include the package name, version, operating system, architecture, and package-manager output.
 - The installed command fails or behaves incorrectly: report it in the tool's source repository.
 - Scoop metadata/install behavior or Homebrew formula behavior is a packaging issue and belongs in this repository.
-- `azc` also requires Azure CLI and an authenticated `az login` session for normal use; its version command does not require authentication.
+- `azc` and `pim-manager` also require Azure CLI and an authenticated `az login` session for normal use; their version commands do not require authentication.
 
 Release assets are immutable. A broken upstream artifact is corrected with a new patch release, never by replacing an existing asset.

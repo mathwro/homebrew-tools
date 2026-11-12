@@ -62,7 +62,8 @@ After release verification, `.github/workflows/release-tool.yml` calls `.github/
     "repository": "mathwro/azc",
     "package": "azc",
     "tag": "v1.2.3",
-    "version": "1.2.3"
+    "version": "1.2.3",
+    "release_id": 12345678
   }
 }
 ```

@@ -2,7 +2,7 @@
   "package": "nwcli",
   "repository": "mathwro/nwcli",
   "description": "Network CLI Toolbox",
-  "license": null,
+  "license": "MIT",
   "executable": "nwcli",
   "version_command": [
     "--version"
