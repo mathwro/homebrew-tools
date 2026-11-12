@@ -1,7 +1,7 @@
 class Nwcli < Formula
   desc "Network CLI Toolbox"
   homepage "https://github.com/mathwro/nwcli"
-  license :cannot_represent
+  license "MIT"
 
   on_macos do
     on_arm do
